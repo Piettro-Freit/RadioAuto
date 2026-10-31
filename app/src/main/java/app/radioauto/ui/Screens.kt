@@ -493,7 +493,9 @@ private fun PlayerScreen(
 ) {
     val cs = MaterialTheme.colorScheme
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val wide = maxWidth > maxHeight
+        val screenWidth = maxWidth
+        val screenHeight = maxHeight
+        val wide = screenWidth > screenHeight
         Column(Modifier.fillMaxSize()) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClose) { Icon(Icons.Rounded.KeyboardArrowDown, "Fechar player", Modifier.size(32.dp)) }
@@ -512,7 +514,7 @@ private fun PlayerScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(40.dp),
                 ) {
-                    Logo(station, minOf(maxHeight * 0.6f, 300.dp), radius = 20.dp)
+                    Logo(station, minOf(screenHeight * 0.6f, 300.dp), radius = 20.dp)
                     Column(Modifier.weight(1f)) {
                         PlayerInfo(station, player, Alignment.Start)
                         Spacer(Modifier.height(28.dp))
@@ -525,7 +527,7 @@ private fun PlayerScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Spacer(Modifier.weight(1f))
-                    Logo(station, minOf(maxWidth - 48.dp, 300.dp), radius = 22.dp)
+                    Logo(station, minOf(screenWidth - 48.dp, 300.dp), radius = 22.dp)
                     Spacer(Modifier.height(28.dp))
                     PlayerInfo(station, player, Alignment.CenterHorizontally)
                     Spacer(Modifier.weight(1f))
