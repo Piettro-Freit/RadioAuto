@@ -4,12 +4,14 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
 import app.radioauto.data.Band
+import app.radioauto.data.LocationHelper
 import app.radioauto.data.RadioRepository
 import app.radioauto.data.Station
 import com.google.common.collect.ImmutableList
@@ -44,6 +46,11 @@ class PlaybackService : MediaLibraryService() {
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
+        player.addListener(object : Player.Listener {
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                mediaItem?.mediaId?.let { RadioRepository.find(it) }?.let(RadioRepository::addRecent)
+            }
+        })
         session = MediaLibrarySession.Builder(this, player, LibraryCallback()).build()
     }
 
@@ -90,10 +97,20 @@ class PlaybackService : MediaLibraryService() {
         ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> = scope.future {
             try {
                 val items: List<MediaItem> = when (parentId) {
-                    ROOT -> listOf(folder(FM, "FM"), folder(AM, "AM"), folder(FAVS, "Favoritas"))
-                    FM -> RadioRepository.brazil().filter { it.band == Band.FM }.map(Station::toMediaItem)
-                    AM -> RadioRepository.brazil().filter { it.band == Band.AM }.map(Station::toMediaItem)
+                    ROOT -> listOf(
+                        folder(FAVS, "Favoritas"),
+                        folder(RECENTS, "Recentes"),
+                        folder(NEAR, "Perto de você"),
+                        folder(TOP, "Mais ouvidas"),
+                        folder(FM, "FM"),
+                        folder(AM, "AM"),
+                    )
                     FAVS -> RadioRepository.favorites.value.map(Station::toMediaItem)
+                    RECENTS -> RadioRepository.recents.value.map(Station::toMediaItem)
+                    NEAR -> nearStations().map(Station::toMediaItem)
+                    TOP -> RadioRepository.top().map(Station::toMediaItem)
+                    FM -> RadioRepository.top().filter { it.band == Band.FM }.map(Station::toMediaItem)
+                    AM -> RadioRepository.top().filter { it.band == Band.AM }.map(Station::toMediaItem)
                     else -> emptyList()
                 }
                 // O Android Auto limita listas longas; 100 itens por pasta basta.
@@ -165,10 +182,19 @@ class PlaybackService : MediaLibraryService() {
         }
     }
 
+    private suspend fun nearStations(): List<Station> {
+        val loc = LocationHelper.current(this) ?: return emptyList()
+        val place = RadioRepository.placeAt(loc.first, loc.second)
+        return RadioRepository.local(loc.first, loc.second, place?.state)
+    }
+
     private companion object {
         const val ROOT = "root"
         const val FM = "fm"
         const val AM = "am"
         const val FAVS = "favs"
+        const val RECENTS = "recents"
+        const val NEAR = "near"
+        const val TOP = "top"
     }
 }
