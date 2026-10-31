@@ -1,11 +1,9 @@
-name: Compilar APK Android
+name: Compilar APK com Gradle do Servidor
 
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch: # Permite rodar manualmente pelo site do GitHub
+  workflow_dispatch:
 
 jobs:
   build:
@@ -20,16 +18,17 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '17'
-        cache: gradle
 
-    - name: Dar permissão de execução ao Gradle Wrapper
-      run: chmod +x gradlew
+    - name: Instalar o Gradle
+      uses: gradle/actions/setup-gradle@v3
+      # Esse action do Gradle instala automaticamente a versão correta do Gradle se ela não estiver presente
 
     - name: Compilar o APK (Debug)
-      run: ./gradlew assembleDebug
+      run: gradle assembleDebug
+      # Nota: usamos apenas 'gradle' em vez de './gradlew'
 
     - name: Salvar o APK gerado
       uses: actions/upload-artifact@v4
       with:
         name: app-debug-apk
-        path: app/build/outputs/apk/debug/app-debug.xlsx # Atenção: se o APK for gerado em outra pasta, ajuste aqui (geralmente app/build/outputs/apk/debug/app-debug.apk)
+        path: app/build/outputs/apk/debug/app-debug.apk
